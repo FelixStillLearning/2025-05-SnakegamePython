@@ -1,6 +1,8 @@
 # Python Snake Game
 
-A classic Snake game implemented in Python using Pygame with advanced features.
+A classic Snake game implemented in Python using Pygame with advanced features and pixel art graphics.
+
+![Snake Game Screenshot](assets/images/snake.p8.png)
 
 ## Features
 
@@ -89,3 +91,24 @@ python src/main.py
 - **T**: Toggle textures
 
 Enjoy playing the enhanced Snake game!
+
+## Contributing
+
+Contributions are welcome! If you'd like to contribute to this project, please:
+
+1. Fork the repository
+2. Create a new branch (`git checkout -b feature/your-feature`)
+3. Make your changes
+4. Commit your changes (`git commit -m 'Add some feature'`)
+5. Push to the branch (`git push origin feature/your-feature`)
+6. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- Pixel art inspired by classic 8-bit games
+- Sound effects from the 8Bit SFX and Music Pack
+- Thanks to the Pygame community for their excellent documentation and examples
