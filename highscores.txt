@@ -1,0 +1,3 @@
+easy:30
+medium:190
+hard:10
