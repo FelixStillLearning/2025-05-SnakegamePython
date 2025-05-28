@@ -16,9 +16,11 @@ class Food:
         self.animation_growing = True
         self.texture_manager = texture_manager
         self.rotation_angle = 0
+        self.spawn_animation = 0  # Animation when food appears
+        self.spawn_particles = []  # Particles when food spawns
         self.spawn()
 
-    def spawn(self, snake_positions=None):
+    def spawn(self, snake_positions=None, obstacle_positions=None):
         # Make food spawn aligned with the snake grid (SNAKE_BLOCK)
         valid_position = False
         
@@ -27,13 +29,31 @@ class Food:
             y = random.randint(0, (self.screen_height // SNAKE_BLOCK) - 1) * SNAKE_BLOCK
             new_position = (x, y)
             
-            # Ensure food doesn't spawn on snake
-            if snake_positions and new_position in snake_positions:
+            # Ensure food doesn't spawn on snake or obstacles
+            if ((snake_positions and new_position in snake_positions) or 
+                (obstacle_positions and new_position in obstacle_positions)):
                 continue
             else:
                 valid_position = True
                 
         self.position = new_position
+        
+        # Start spawn animation
+        self.spawn_animation = 30  # 1 second at 30 FPS
+        
+        # Create spawn particles
+        self.spawn_particles = []
+        for _ in range(8):
+            angle = random.random() * 2 * math.pi
+            speed = random.uniform(2, 5)
+            self.spawn_particles.append({
+                'x': new_position[0] + SNAKE_BLOCK // 2,
+                'y': new_position[1] + SNAKE_BLOCK // 2,
+                'vx': math.cos(angle) * speed,
+                'vy': math.sin(angle) * speed,
+                'life': 20,
+                'max_life': 20
+            })
         
         # Random chance for special food
         self.special_counter += 1
@@ -42,13 +62,25 @@ class Food:
         if self.special_counter >= 5:
             self.special_counter = 0
             rand_val = random.random()
-            if rand_val < 0.7:  # 70% chance for special food
+            if rand_val < 0.3:  # 30% chance for special food
                 self.food_type = SPECIAL_FOOD
                 self.special_timer = 300  # 10 seconds at 30 FPS
-            elif rand_val < 0.9:  # 20% chance for super food
+            elif rand_val < 0.5:  # 20% chance for super food
                 self.food_type = SUPER_FOOD
                 self.special_timer = 150  # 5 seconds at 30 FPS
-            else:  # 10% chance for normal food
+            elif rand_val < 0.65:  # 15% chance for shrink food
+                self.food_type = SHRINK_FOOD
+                self.special_timer = 200  # 6.7 seconds
+            elif rand_val < 0.75:  # 10% chance for slowmo food
+                self.food_type = SLOWMO_FOOD
+                self.special_timer = 250  # 8.3 seconds
+            elif rand_val < 0.85:  # 10% chance for double score food
+                self.food_type = DOUBLE_SCORE_FOOD
+                self.special_timer = 300  # 10 seconds
+            elif rand_val < 0.95:  # 10% chance for ghost food
+                self.food_type = GHOST_FOOD
+                self.special_timer = 200  # 6.7 seconds
+            else:  # 5% chance for normal food
                 self.food_type = NORMAL_FOOD
         else:
             self.food_type = NORMAL_FOOD
@@ -56,6 +88,26 @@ class Food:
         return self.position
 
     def update(self):
+        # Update spawn animation
+        if self.spawn_animation > 0:
+            self.spawn_animation -= 1
+        
+        # Update spawn particles
+        for particle in self.spawn_particles[:]:
+            if isinstance(particle, Particle):
+                # Particle class instances are updated in the draw method
+                continue
+            else:
+                # Dictionary-based particles
+                particle['x'] += particle['vx']
+                particle['y'] += particle['vy']
+                particle['life'] -= 1
+                particle['vx'] *= 0.95  # Slow down
+                particle['vy'] *= 0.95
+                
+                if particle['life'] <= 0:
+                    self.spawn_particles.remove(particle)
+        
         # Update special food timer
         if self.food_type != NORMAL_FOOD:
             self.special_timer -= 1
@@ -86,6 +138,15 @@ class Food:
             return 25
         elif self.food_type == SUPER_FOOD:
             return 50
+        elif self.food_type == SHRINK_FOOD:
+            return 15
+        elif self.food_type == SLOWMO_FOOD:
+            return 20
+        elif self.food_type == DOUBLE_SCORE_FOOD:
+            return 30
+        elif self.food_type == GHOST_FOOD:
+            return 40
+        return 10
     
     def draw(self, screen):
         use_textures = self.texture_manager and self.texture_manager.use_textures
@@ -115,6 +176,18 @@ class Food:
         elif self.food_type == SUPER_FOOD:
             texture_name = 'food_super'
             color = GOLD
+        elif self.food_type == SHRINK_FOOD:
+            texture_name = 'shrink_food'
+            color = BLUE
+        elif self.food_type == SLOWMO_FOOD:
+            texture_name = 'slowmo_food'
+            color = (0, 255, 255)
+        elif self.food_type == DOUBLE_SCORE_FOOD:
+            texture_name = 'double_score_food'
+            color = (255, 215, 0)
+        elif self.food_type == GHOST_FOOD:
+            texture_name = 'ghost_food'
+            color = (200, 200, 255)
             
         if use_textures:
             # Use texture for food
@@ -238,3 +311,65 @@ class Food:
                     2,
                     timer_height
                 ))
+        
+        # Draw spawn animation and particles
+        if self.spawn_animation > 0:
+            # Draw expanding circle effect
+            alpha = int((self.spawn_animation / 30) * 100)
+            radius = int((30 - self.spawn_animation) * 2)
+            
+            # Create a surface for the circle with alpha
+            circle_surface = pygame.Surface((radius * 2, radius * 2), pygame.SRCALPHA)
+            pygame.draw.circle(circle_surface, (255, 255, 255, alpha), (radius, radius), radius, 2)
+            
+            circle_x = self.position[0] + SNAKE_BLOCK // 2 - radius
+            circle_y = self.position[1] + SNAKE_BLOCK // 2 - radius
+            screen.blit(circle_surface, (circle_x, circle_y))
+        
+        # Draw spawn particles
+        for particle in self.spawn_particles:
+            if isinstance(particle, Particle):
+                # Particle class instances
+                particle.update()
+                particle.draw(screen)
+                
+                # Remove old particles
+                if particle.lifetime <= 0:
+                    self.spawn_particles.remove(particle)
+            else:
+                # Dictionary-based particles
+                alpha = int((particle['life'] / particle['max_life']) * 255)
+                particle_size = max(1, int((particle['life'] / particle['max_life']) * 3))
+                
+                # Create particle surface with alpha
+                particle_surface = pygame.Surface((particle_size, particle_size), pygame.SRCALPHA)
+                particle_surface.fill((255, 255, 255, alpha))
+                screen.blit(particle_surface, (int(particle['x']), int(particle['y'])))
+        
+        # Create new particles
+        if random.random() < 0.3:  # 30% chance to create a particle
+            self.spawn_particles.append(Particle(
+                self.position[0] + random.randint(0, SNAKE_BLOCK),
+                self.position[1] + random.randint(0, SNAKE_BLOCK),
+                color
+            ))
+        
+class Particle:
+    def __init__(self, x, y, color):
+        self.position = [x, y]
+        self.velocity = [random.uniform(-1, 1), random.uniform(-1, 1)]
+        self.lifetime = 30  # Lifetime in frames
+        self.color = color
+        
+    def update(self):
+        # Update position and lifetime
+        self.position[0] += self.velocity[0]
+        self.position[1] += self.velocity[1]
+        self.lifetime -= 1
+        
+    def draw(self, screen):
+        # Draw the particle
+        pygame.draw.circle(screen, self.color, (
+            int(self.position[0]), 
+            int(self.position[1])
+        ), 2)

@@ -312,9 +312,150 @@ class TextureManager:
                         (size//3, size//3, pixel_size*2, pixel_size*2))
         pygame.draw.rect(food_super, self.pixel_colors['white'], 
                         (size//2, size//2, pixel_size, pixel_size))
-          # Scale the texture
-        self.textures['food_super'] = self.pixelate_surface(food_super, 1)
         
+        # Create additional special food textures
+        self._create_shrink_food_texture()
+        self._create_slowmo_food_texture()
+        self._create_double_score_food_texture()
+        self._create_ghost_food_texture()
+    
+    def _create_shrink_food_texture(self):
+        """Create pixel art texture for shrink food (blue pill)"""
+        size = SNAKE_BLOCK
+        pixel_size = size // 8
+        
+        surface = pygame.Surface((size, size), pygame.SRCALPHA)
+        surface.fill((0, 0, 0, 0))
+        
+        # Create pill shape in blue
+        for y in range(pixel_size * 2, size - pixel_size * 2, pixel_size):
+            for x in range(pixel_size * 3, size - pixel_size * 3, pixel_size):
+                pygame.draw.rect(surface, self.pixel_colors['blue'], 
+                                (x, y, pixel_size, pixel_size))
+        
+        # Add rounded ends
+        for x in range(pixel_size * 3, size - pixel_size * 3, pixel_size):
+            pygame.draw.rect(surface, self.pixel_colors['blue'], 
+                            (x, pixel_size, pixel_size, pixel_size))
+            pygame.draw.rect(surface, self.pixel_colors['blue'], 
+                            (x, size - pixel_size * 2, pixel_size, pixel_size))
+        
+        # Add highlight
+        for x in range(pixel_size * 3, size - pixel_size * 4, pixel_size):
+            pygame.draw.rect(surface, (150, 150, 255), 
+                            (x, pixel_size * 2, pixel_size, pixel_size))
+        
+        # Add minus symbol
+        for x in range(pixel_size * 4, size - pixel_size * 4, pixel_size):
+            pygame.draw.rect(surface, self.pixel_colors['white'], 
+                            (x, pixel_size * 4, pixel_size, pixel_size))
+        
+        self.textures['shrink_food'] = self.pixelate_surface(surface, 1)
+    
+    def _create_slowmo_food_texture(self):
+        """Create pixel art texture for slowmo food (cyan clock)"""
+        size = SNAKE_BLOCK
+        pixel_size = size // 8
+        
+        surface = pygame.Surface((size, size), pygame.SRCALPHA)
+        surface.fill((0, 0, 0, 0))
+        
+        # Create clock outline
+        for i in range(8):
+            angle = i * 45 * math.pi / 180
+            x = int(size//2 + 3 * pixel_size * math.cos(angle)) - pixel_size//2
+            y = int(size//2 + 3 * pixel_size * math.sin(angle)) - pixel_size//2
+            pygame.draw.rect(surface, (0, 255, 255), (x, y, pixel_size, pixel_size))
+        
+        # Fill center
+        for y in range(pixel_size * 3, size - pixel_size * 3, pixel_size):
+            for x in range(pixel_size * 3, size - pixel_size * 3, pixel_size):
+                pygame.draw.rect(surface, (100, 255, 255), 
+                                (x, y, pixel_size, pixel_size))
+        
+        # Add clock hands
+        center_x, center_y = size//2, size//2
+        pygame.draw.rect(surface, self.pixel_colors['black'], 
+                        (center_x - pixel_size//2, center_y - pixel_size//2, pixel_size, pixel_size))
+        pygame.draw.rect(surface, self.pixel_colors['black'], 
+                        (center_x - pixel_size//2, center_y - pixel_size * 2, pixel_size, pixel_size))
+        pygame.draw.rect(surface, self.pixel_colors['black'], 
+                        (center_x + pixel_size, center_y - pixel_size//2, pixel_size, pixel_size))
+        
+        self.textures['slowmo_food'] = self.pixelate_surface(surface, 1)
+    
+    def _create_double_score_food_texture(self):
+        """Create pixel art texture for double score food (golden star with 2x)"""
+        size = SNAKE_BLOCK
+        pixel_size = size // 8
+        
+        surface = pygame.Surface((size, size), pygame.SRCALPHA)
+        surface.fill((0, 0, 0, 0))
+        
+        # Create star shape with golden color
+        star_color = (255, 215, 0)
+        highlight_color = (255, 255, 150)
+        
+        # Star center
+        for y in range(pixel_size * 3, size - pixel_size * 3, pixel_size):
+            for x in range(pixel_size * 3, size - pixel_size * 3, pixel_size):
+                pygame.draw.rect(surface, star_color, (x, y, pixel_size, pixel_size))
+        
+        # Star points
+        points = [
+            (size//2, pixel_size),  # top
+            (size//2, size - pixel_size * 2),  # bottom
+            (pixel_size, size//2),  # left
+            (size - pixel_size * 2, size//2),  # right
+        ]
+        
+        for px, py in points:
+            pygame.draw.rect(surface, star_color, 
+                            (px - pixel_size//2, py - pixel_size//2, pixel_size, pixel_size))
+        
+        # Add highlight
+        pygame.draw.rect(surface, highlight_color, 
+                        (pixel_size * 3, pixel_size * 3, pixel_size, pixel_size))
+        
+        # Add "2x" text
+        pygame.draw.rect(surface, self.pixel_colors['black'], 
+                        (pixel_size * 2, pixel_size * 5, pixel_size * 4, pixel_size))
+        
+        self.textures['double_score_food'] = self.pixelate_surface(surface, 1)
+    
+    def _create_ghost_food_texture(self):
+        """Create pixel art texture for ghost food (translucent white spirit)"""
+        size = SNAKE_BLOCK
+        pixel_size = size // 8
+        
+        surface = pygame.Surface((size, size), pygame.SRCALPHA)
+        surface.fill((0, 0, 0, 0))
+        
+        # Create ghost shape
+        ghost_color = (200, 200, 255, 180)  # Semi-transparent light blue
+        
+        # Ghost head (rounded top)
+        for y in range(pixel_size * 2, pixel_size * 5, pixel_size):
+            for x in range(pixel_size * 2, size - pixel_size * 2, pixel_size):
+                temp_surface = pygame.Surface((pixel_size, pixel_size), pygame.SRCALPHA)
+                temp_surface.fill(ghost_color)
+                surface.blit(temp_surface, (x, y))
+        
+        # Ghost body (wavy bottom)
+        for x in range(pixel_size * 2, size - pixel_size * 2, pixel_size):
+            height = pixel_size * 6 if (x // pixel_size) % 2 == 0 else pixel_size * 5
+            temp_surface = pygame.Surface((pixel_size, pixel_size), pygame.SRCALPHA)
+            temp_surface.fill(ghost_color)
+            surface.blit(temp_surface, (x, height))
+        
+        # Ghost eyes
+        pygame.draw.rect(surface, self.pixel_colors['black'], 
+                        (pixel_size * 3, pixel_size * 3, pixel_size, pixel_size))
+        pygame.draw.rect(surface, self.pixel_colors['black'], 
+                        (pixel_size * 5, pixel_size * 3, pixel_size, pixel_size))
+        
+        self.textures['ghost_food'] = surface  # Don't pixelate to keep transparency
+    
     def create_background_texture(self):
         # Create a retro pixel art background
         # Define grid sizes for the pixel art background
@@ -457,8 +598,7 @@ class TextureManager:
     def pixelate_surface(self, surface, pixel_size=4):
         """Applies a pixelation effect to a surface."""
         width, height = surface.get_size()
-        
-        # Create a smaller version of the surface
+          # Create a smaller version of the surface
         small_surface = pygame.transform.scale(surface, (width // pixel_size, height // pixel_size))
         
         # Scale it back up to the original size, resulting in pixelation
@@ -490,6 +630,30 @@ class TextureManager:
         if self.use_textures and texture_name in self.textures and self.textures[texture_name] is not None:
             return self.textures[texture_name]
         return None
+    
+    def draw_background(self, screen):
+        """Draw a pixel art background for the game."""
+        # Create a simple grid pattern background
+        grid_size = 32
+        dark_color = self.pixel_colors['dark_blue']
+        light_color = self.pixel_colors['dark_green']
+        
+        for y in range(0, 600, grid_size):  # Use hardcoded values for now
+            for x in range(0, 800, grid_size):
+                # Checkerboard pattern
+                if (x // grid_size + y // grid_size) % 2 == 0:
+                    color = dark_color
+                else:
+                    color = light_color
+                    
+                pygame.draw.rect(screen, color, (x, y, grid_size, grid_size))
+                
+        # Add some subtle border lines
+        border_color = self.pixel_colors['dark_gray']
+        for y in range(0, 600, grid_size):
+            pygame.draw.line(screen, border_color, (0, y), (800, y), 1)
+        for x in range(0, 800, grid_size):
+            pygame.draw.line(screen, border_color, (x, 0), (x, 600), 1)
     
     def toggle_textures(self):
         self.use_textures = not self.use_textures
